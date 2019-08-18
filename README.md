@@ -1,2 +1,2 @@
 # Dashify
- A dashboard for spotify
+ A dashboard for Spotify
