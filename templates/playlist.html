@@ -1,0 +1,73 @@
+<!doctype html>
+<html>
+    <head>
+        {% if title %}
+        <title>{{ title }}</title>
+        {% else %}
+        <title>Dashify</title>
+        {% endif %}
+        <link rel="stylesheet" href="https://stackpath.bootstrapcdn.com/bootstrap/4.3.1/css/bootstrap.min.css" integrity="sha384-ggOyR0iXCbMQv3Xipma34MD+dH/1fQ784/j6cY/iJTQUOhcWr7x9JvoRxT2MZw1T" crossorigin="anonymous">
+    </head>
+    <body>
+        {% if user %}
+        <h1 class="text-center">Hiya, {{ user }}</h1>
+        {% else %}
+        <h1>Hiya</h1>
+        {% endif %}
+        <div class="row align-center text-center">
+            <div class="radarChart" style="display:inline-block; margin:0 auto;"></div>
+        </div>
+        
+            {% for song in songs %}
+            <a href="http://home.evanshrestha.me:5000/track/{{ song.id }}">
+                <div class="card col-lg-12 d-flex align-items-stretch p-4">
+                    <div class="row no-gutters">
+                        <div class="col-md-2 align-middle">
+                            <img src="{{ song.image }}" class="card-img" alt="{{ song.title }}">
+                        </div>
+                        <div class="col-md-8">
+                            <div class="card-body">
+                                <h2 class="card-title">{{ song.title }}</h2>
+                                <h3 class="card-subtitle mp-2 text-muted">{{ song.artist }}</h3>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </a>
+            {% endfor %}
+        <script src="https://code.jquery.com/jquery-3.3.1.slim.min.js" integrity="sha384-q8i/X+965DzO0rT7abK41JStQIAqVgRVzpbzo5smXKp4YfRvH+8abtTE1Pi6jizo" crossorigin="anonymous"></script>
+        <script src="https://cdnjs.cloudflare.com/ajax/libs/popper.js/1.14.7/umd/popper.min.js" integrity="sha384-UO2eT0CpHqdSJQ6hJty5KVphtPhzWj9WO1clHTMGa3JDZwrnQq4sF86dIHNDz0W1" crossorigin="anonymous"></script>
+        <script src="https://stackpath.bootstrapcdn.com/bootstrap/4.3.1/js/bootstrap.min.js" integrity="sha384-JjSmVgyd0p3pXB1rRibZUAYoIIy6OrQ6VrjIEaFf/nJGzIxFDsf4x0xIM+B07jRM" crossorigin="anonymous"></script>
+        <script src="https://cdnjs.cloudflare.com/ajax/libs/d3/3.5.6/d3.min.js" charset="utf-8"></script>
+        <script type="text/javascript" src={{ url_for('static', filename='js/radarChart.js') }}></script>
+        <script>
+                var margin = {top: 100, right: 100, bottom: 100, left: 100},
+                    width = Math.min(700, window.innerWidth - 10) - margin.left - margin.right,
+                    height = Math.min(width, window.innerHeight - margin.top - margin.bottom - 20);
+                var data = [
+                {% for features in songs_features %}
+                [
+                    {axis:"Acousticness",value: {{ features.acousticness }} },
+                    {axis:"Danceability",value: {{ features.danceability }} },
+                    {axis:"Energy",value: {{ features.energy }} },
+                    {axis:"Instrumentalness",value: {{ features.instrumentalness }} },
+                    {axis:"Liveness",value: {{ features.instrumentalness }} },
+                    {axis:"Speechiness",value: {{ features.instrumentalness }} },
+                    {axis:"Valence",value: {{ features.instrumentalness }} }
+                ],
+                {% endfor %}];
+                var color = d3.scale.ordinal()
+				.range(["#1ED761"]);
+                var radarChartOptions = {
+                  w: width,
+                  h: height,
+                  margin: margin,
+                  maxValue: 1,
+                  levels: 5,
+                  roundStrokes: true,
+                  color: color
+                };
+                RadarChart(".radarChart", data, radarChartOptions);
+        </script>
+    </body>
+</html>
