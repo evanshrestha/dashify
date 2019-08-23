@@ -9,23 +9,32 @@
         <link rel="stylesheet" href="https://stackpath.bootstrapcdn.com/bootstrap/4.3.1/css/bootstrap.min.css" integrity="sha384-ggOyR0iXCbMQv3Xipma34MD+dH/1fQ784/j6cY/iJTQUOhcWr7x9JvoRxT2MZw1T" crossorigin="anonymous">
     </head>
     <body>
-        {% if user %}
-        <h1 class="text-center">Hiya, {{ user }}</h1>
-        {% else %}
-        <h1>Hiya</h1>
-        {% endif %}
+        <div class="row p-4 rounded bg-light">
+            {% if playlist %}
+            {% if playlist.images|length > 0 %}
+            <img class="col-md-2" src="{{ playlist.images[0].url }}" alt="{{ playlist.name }}">
+            {% endif %}
+            <div class="col-md-10">
+                <h1>{{ playlist.name }}</h1>
+                <h2 class="text-muted">{{ playlist.owner.name }}</h2>
+            </div>
+            {% else %}
+            <div class="col-md-10">
+                <h1>Recently played</h1>
+                <h2 class="text-muted">You</h2>
+            </div>
+            {% endif %}
+        </div>
         <div class="row align-center text-center">
             <div class="radarChart" style="display:inline-block; margin:0 auto;"></div>
         </div>
         
             {% for song in songs %}
-            <a href="http://home.evanshrestha.me:5000/track/{{ song.id }}">
+            <a href="{{ home_url }}/track/{{ song.id }}">
                 <div class="card col-lg-12 d-flex align-items-stretch p-4">
                     <div class="row no-gutters">
-                        <div class="col-md-2 align-middle">
-                            <img src="{{ song.image }}" class="card-img" alt="{{ song.title }}">
-                        </div>
-                        <div class="col-md-8">
+                        <img src="{{ song.image }}" class="card-img col-sm-2" style="max-width: 10rem;" alt="{{ song.title }}">
+                        <div>
                             <div class="card-body">
                                 <h2 class="card-title">{{ song.title }}</h2>
                                 <h3 class="card-subtitle mp-2 text-muted">{{ song.artist }}</h3>

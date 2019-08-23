@@ -1,21 +1,49 @@
 import sys
 import spotipy
 import spotipy.util as util
-from flask import Flask, render_template
+from spotipy import oauth2
+from flask import Flask, render_template, session, redirect, request
+from flask_session import Session
+import os
 
 app = Flask(__name__, static_url_path="/static")
+SESSION_TYPE = 'filesystem'
+app.config.from_object(__name__)
+Session(app)
 
-scope = 'user-library-read playlist-read-private'
-username = sys.argv[1]
+scope = 'user-library-read playlist-read-private user-read-recently-played'
 home_url = sys.argv[2]
-token = util.prompt_for_user_token(username, scope)
-sp = spotipy.Spotify(auth=token)
+
+client_id = os.getenv('SPOTIPY_CLIENT_ID')
+client_secret = os.getenv('SPOTIPY_CLIENT_SECRET')
+redirect_uri = os.getenv('SPOTIPY_REDIRECT_URI')
+
+def authorize_user():
+    sp_oauth = oauth2.SpotifyOAuth(client_id = client_id, client_secret = client_secret, redirect_uri = redirect_uri, 
+        scope=scope)
+
+    if request.args.get("code") is not None:
+        code = sp_oauth.parse_response_code(request.url)
+        token_info = sp_oauth.get_access_token(code)
+        session["token"] = token_info['access_token']
+
+    auth_url = sp_oauth.get_authorize_url()
+    return auth_url
 
 @app.route('/')
 def get_home_page():
+    auth = authorize_user()
+    if "token" in session:
+        sp = spotipy.Spotify(auth=session["token"])
+    else:
+        return redirect(auth)
     playlists = []
 
-    results = sp.current_user_playlists()
+    try:
+        results = sp.current_user_playlists()
+    except spotipy.client.SpotifyException:
+        return redirect(auth)
+
     playlist_items = results['items']
 
     while results['next']:
@@ -25,7 +53,10 @@ def get_home_page():
     for item in playlist_items:
         playlist_id = item['id']
         playlist_name = item["name"]
-        playlist_image = item['images'][0]['url']
+        if len(item['images']) > 0:
+            playlist_image = item['images'][0]['url']
+        else:
+            playlist_image = ""
         playlist_owner = item['owner']
         playlist = {
             "id": playlist_id,
@@ -34,12 +65,20 @@ def get_home_page():
             "owner": playlist_owner
         }
         playlists.append(playlist)
-    return render_template("index.html", user=username, playlists=playlists, home_url=home_url)
+    return render_template("index.html", user=sp.current_user()['display_name'], playlists=playlists, home_url=home_url)
 
 @app.route('/playlist/<playlist_id>')
 def get_playlist_info(playlist_id):
+
+    auth = authorize_user()
+    if "token" in session:
+        sp = spotipy.Spotify(auth=session["token"])
+    else:
+        return redirect(auth)
+
     songs = []
-    results = sp.user_playlist_tracks(username, playlist_id=playlist_id)
+    results = sp.user_playlist_tracks(sp.current_user()['id'], playlist_id=playlist_id)
+    playlist = sp.user_playlist(sp.current_user()['id'], playlist_id=playlist_id)
     tracks = results['items']
 
     while results['next']:
@@ -50,10 +89,11 @@ def get_playlist_info(playlist_id):
         track = item['track']
         album = track['album']
         album_images = album['images']
-        image_url = album_images[0]['url']
+        image_url = ""
+        if len(album_images) > 0:
+            image_url = album_images[0]['url']
 
         track_id = track['id']
-        print(track['name'] + ' - ' + track['artists'][0]['name'])
 
         song = {"title": track['name'],
                 "artist": track['artists'][0]['name'],
@@ -68,17 +108,64 @@ def get_playlist_info(playlist_id):
 
     for chunk in song_chunks:
         songs_features.extend(sp.audio_features(chunk))
+        
+    return render_template("playlist.html", user=sp.current_user()['display_name'], playlist=playlist, songs=songs, songs_features=songs_features, home_url=home_url)
 
-    return render_template("playlist.html", user=username, songs=songs, songs_features=songs_features, home_url=home_url)
+@app.route('/recent')
+def get_recent__info():
+    auth = authorize_user()
+    if "token" in session:
+        sp = spotipy.Spotify(auth=session["token"])
+    else:
+        return redirect(auth)
+    results = sp.current_user_recently_played()
+    songs = []
+
+    for item in results['items']:
+        track = item['track']
+        album = track['album']
+        album_images = album['images']
+        if len(album_images) > 0:
+            image_url = album_images[0]['url']
+        else:
+            image_url = ""
+
+        track_id = track['id']
+
+        song = {"title": track['name'],
+                "artist": track['artists'][0]['name'],
+                "image": image_url,
+                "id": track_id}
+
+        songs.append(song)
+
+    song_ids = [song["id"] for song in songs]
+    song_chunks = [song_ids[i*50:i*50 + 50] for i in range((len(songs)+50-1)//50)]
+    songs_features = []
+
+    for chunk in song_chunks:
+        songs_features.extend(sp.audio_features(chunk))
+        
+    return render_template("playlist.html", user=sp.current_user()['display_name'], songs=songs, songs_features=songs_features, home_url=home_url)
 
 @app.route('/track/<track_id>')
 def get_track_info(track_id):
+    auth = authorize_user()
+    if "token" in session:
+        sp = spotipy.Spotify(auth=session["token"])
+    else:
+        return redirect(auth)
     track = sp.track(track_id)
     print(track)
     return render_template("track.html", track=track, features = get_audio_features(track_id)[0], home_url=home_url)
 
 def get_audio_features(track_id):
+    auth = authorize_user()
+    if "token" in session:
+        sp = spotipy.Spotify(auth=session["token"])
+    else:
+        return redirect(auth)
     return sp.audio_features(tracks=[track_id])
 
 if __name__ == '__main__':
-    app.run(host='0.0.0.0')
+    app.run(host='0.0.0.0', port='5000')
