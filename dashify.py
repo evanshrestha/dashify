@@ -12,8 +12,8 @@ app.config.from_object(__name__)
 Session(app)
 
 scope = 'user-library-read playlist-read-private user-read-recently-played'
-home_url = sys.argv[2]
-
+home_url = 'spotify.evanshrestha.com'
+home_url = ''
 client_id = os.getenv('SPOTIPY_CLIENT_ID')
 client_secret = os.getenv('SPOTIPY_CLIENT_SECRET')
 redirect_uri = os.getenv('SPOTIPY_REDIRECT_URI')

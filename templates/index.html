@@ -27,7 +27,7 @@
             {% for playlist in playlists %}
             <a href="{{ home_url }}/playlist/{{ playlist.id }}">
                 <div class="card m-5 mb-5" style="width: 18rem; height: 90%;">
-                    <img src="{{ playlist.image }}" class="card-img-top" alt="{{ playlist.name }}">
+                    <img src="{{ playlist.image }}" class="card-img-top" style="object-fit: contain; width: 18rem; height: 18rem;" alt="{{ playlist.name }}">
                     <div class="card-body">
                         <h2 class="card-title">{{ playlist.name }}</h2>
                         <h3 class="card-subtitle mp-2 text-muted">{{ playlist.owner.display_name }}</h3>

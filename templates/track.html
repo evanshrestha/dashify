@@ -11,7 +11,7 @@
     <body>
         <div class="row p-4 rounded bg-light">
             {% if track.album.images|length > 0 %}
-            <img class="col-md-2" src="{{ track.album.images[0].url }}" alt="{{ track.name }}">
+            <img class="col-md-2" src="{{ track.album.images[0].url }}" style="object-fit: contain; width: 16rem; height: 16rem;"  alt="{{ track.name }}">
             {% endif %}
             <div class="col-md-10">
                 <h1>{{ track.name }}</h1>
