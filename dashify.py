@@ -14,9 +14,10 @@ Session(app)
 scope = 'user-library-read playlist-read-private user-read-recently-played'
 home_url = 'spotify.evanshrestha.com'
 home_url = ''
-client_id = os.getenv('SPOTIPY_CLIENT_ID')
-client_secret = os.getenv('SPOTIPY_CLIENT_SECRET')
-redirect_uri = os.getenv('SPOTIPY_REDIRECT_URI')
+
+client_id = os.getenv('DASHIFY_CLIENT_ID')
+client_secret = os.getenv('DASHIFY_CLIENT_SECRET')
+redirect_uri = os.getenv('DASHIFY_REDIRECT_URI')
 
 def authorize_user():
     sp_oauth = oauth2.SpotifyOAuth(client_id = client_id, client_secret = client_secret, redirect_uri = redirect_uri, 
@@ -168,4 +169,4 @@ def get_audio_features(track_id):
     return sp.audio_features(tracks=[track_id])
 
 if __name__ == '__main__':
-    app.run(host='0.0.0.0', port='5000')
+    app.run(host='0.0.0.0', port='9001')
