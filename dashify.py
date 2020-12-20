@@ -127,6 +127,7 @@ def get_playlist_info(playlist_id):
 
 @app.route('/recent')
 def get_recent__info():
+
     if "token" in session:
         sp = spotipy.Spotify(auth=session["token"])
     else:
@@ -134,6 +135,7 @@ def get_recent__info():
         return redirect(auth)
     
     songs = []
+    results = sp.current_user_recently_played()
 
     for item in results['items']:
         track = item['track']
