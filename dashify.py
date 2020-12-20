@@ -5,6 +5,7 @@ from spotipy import oauth2
 from flask import Flask, render_template, session, redirect, request
 from flask_session import Session
 import os
+import uuid
 
 app = Flask(__name__, static_url_path="/static")
 SESSION_TYPE = 'filesystem'
@@ -19,10 +20,20 @@ client_id = os.getenv('DASHIFY_CLIENT_ID')
 client_secret = os.getenv('DASHIFY_CLIENT_SECRET')
 redirect_uri = os.getenv('DASHIFY_REDIRECT_URI')
 
-def authorize_user():
-    sp_oauth = oauth2.SpotifyOAuth(client_id = client_id, client_secret = client_secret, redirect_uri = redirect_uri, 
-        scope=scope)
+cache_folder = './cache/'
+if not os.path.exists(cache_folder):
+    os.makedirs(cache_folder)
 
+def session_cache_path():
+    return cache_folder + session.get('uuid')
+
+def authorize_user():
+    if not session.get('uuid'):
+        session['uuid'] = str(uuid.uuid4())
+
+    sp_oauth = oauth2.SpotifyOAuth(client_id = client_id, client_secret = client_secret, redirect_uri = redirect_uri, 
+        scope=scope, cache_path = session_cache_path())
+    
     if request.args.get("code") is not None:
         code = sp_oauth.parse_response_code(request.url)
         token_info = sp_oauth.get_access_token(code)
@@ -31,13 +42,16 @@ def authorize_user():
     auth_url = sp_oauth.get_authorize_url()
     return auth_url
 
+
 @app.route('/')
 def get_home_page():
-    auth = authorize_user()
+
     if "token" in session:
         sp = spotipy.Spotify(auth=session["token"])
     else:
+        auth = authorize_user()
         return redirect(auth)
+    
     playlists = []
 
     try:
@@ -70,13 +84,12 @@ def get_home_page():
 
 @app.route('/playlist/<playlist_id>')
 def get_playlist_info(playlist_id):
-
-    auth = authorize_user()
     if "token" in session:
         sp = spotipy.Spotify(auth=session["token"])
     else:
+        auth = authorize_user()
         return redirect(auth)
-
+    
     songs = []
     results = sp.user_playlist_tracks(sp.current_user()['id'], playlist_id=playlist_id)
     playlist = sp.user_playlist(sp.current_user()['id'], playlist_id=playlist_id)
@@ -114,12 +127,12 @@ def get_playlist_info(playlist_id):
 
 @app.route('/recent')
 def get_recent__info():
-    auth = authorize_user()
     if "token" in session:
         sp = spotipy.Spotify(auth=session["token"])
     else:
+        auth = authorize_user()
         return redirect(auth)
-    results = sp.current_user_recently_played()
+    
     songs = []
 
     for item in results['items']:
@@ -151,21 +164,24 @@ def get_recent__info():
 
 @app.route('/track/<track_id>')
 def get_track_info(track_id):
-    auth = authorize_user()
     if "token" in session:
         sp = spotipy.Spotify(auth=session["token"])
     else:
+        auth = authorize_user()
         return redirect(auth)
+    
+   
     track = sp.track(track_id)
     print(track)
     return render_template("track.html", track=track, features = get_audio_features(track_id)[0], home_url=home_url)
 
 def get_audio_features(track_id):
-    auth = authorize_user()
     if "token" in session:
         sp = spotipy.Spotify(auth=session["token"])
     else:
+        auth = authorize_user()
         return redirect(auth)
+
     return sp.audio_features(tracks=[track_id])
 
 if __name__ == '__main__':
