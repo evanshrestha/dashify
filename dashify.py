@@ -57,6 +57,7 @@ def get_home_page():
     try:
         results = sp.current_user_playlists()
     except spotipy.client.SpotifyException:
+        auth = authorize_user() 
         return redirect(auth)
 
     playlist_items = results['items']
@@ -174,7 +175,6 @@ def get_track_info(track_id):
     
    
     track = sp.track(track_id)
-    print(track)
     return render_template("track.html", track=track, features = get_audio_features(track_id)[0], home_url=home_url)
 
 def get_audio_features(track_id):
